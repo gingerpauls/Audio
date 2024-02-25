@@ -1,11 +1,3 @@
-//-----------------------------------------------------------
-// Play an audio stream on the default audio rendering
-// device. The PlayAudioStream function allocates a shared
-// buffer big enough to hold one second of PCM audio data.
-// The function uses this buffer to stream data to the
-// rendering device. The inner loop runs every 1/2 second.
-//-----------------------------------------------------------
-
 #include "AudioClient.h"
 #include "mmdeviceapi.h"
 #include "time.h"
