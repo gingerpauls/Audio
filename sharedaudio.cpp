@@ -23,6 +23,7 @@
 typedef struct {
     float *Data;
     unsigned long file_size;
+    int num_elements;
 } RAW;
 
 const CLSID CLSID_MMDeviceEnumerator = __uuidof(MMDeviceEnumerator);
@@ -49,13 +50,27 @@ void GenerateSineSamples(BYTE *Buffer, size_t BufferLength, DWORD Frequency, WOR
     }
 }
 
+void LoadRAW(BYTE *Buffer, size_t BufferLength, WORD ChannelCount, DWORD SamplesPerSecond, RAW *rawfile) {
+    float *dataBuffer = (float *) Buffer;
+    RAW rawlarge = {0};
+    rawlarge.Data = (float *) malloc(rawfile->file_size);
+    rawlarge.file_size = rawfile->file_size;
+
+    //for(size_t i = 0; i < BufferLength * ChannelCount; i += ChannelCount) {
+    //    for(size_t j = 0; j < ChannelCount; j++) {
+    //        dataBuffer[i + j] = rawfile->Data[i];
+    //    }
+    //}
+}
+
 // if able to write at least one frame, but runs out of data, then write silence to remaining frames
 // if not able to write at least one frame, write nothing to buffer (not even silence), then write AUDCLNT_BUFFERFLAGS_SILENT to flags
 class  MyAudioSource {
     public:
-    HRESULT LoadData(UINT32 bufferFrameCount, BYTE *pData, DWORD *flags) {
+    HRESULT LoadData(UINT32 bufferFrameCount, BYTE *pData, DWORD *flags, RAW *rawfile) {
         HRESULT hr = NULL;
         //GenerateSineSamples(pData, bufferFrameCount, 440, 2, 192000, 1, 0);
+        LoadRAW(pData, bufferFrameCount, 2, 192000, rawfile);
         return hr;
     }
     HRESULT SetFormat(WAVEFORMATEX *pwfx) {
@@ -79,25 +94,30 @@ HRESULT PlayAudioStream(MyAudioSource *pMySource) {
     UINT32 numFramesPadding;
     BYTE *pData;
     DWORD flags = 0;
-    FILE *raw = NULL;
-    RAW rawfile1 = {0};
+    FILE *wav = NULL;
+    RAW wavfile1 = {0};
     errno_t err;
+    int int_error;
 
-    raw = fopen("swoosh.raw", "r+");
-    fseek(raw, 0, SEEK_END);
-    rawfile1.file_size = ftell(raw);
-    rewind(raw);
+    wav = fopen("sine.wav", "r+");
+    fseek(wav, 0, SEEK_END);
+    wavfile1.file_size = ftell(wav);
+    rewind(wav);
 
-    rawfile1.Data = (float*)malloc(rawfile1.file_size);
-    if(rawfile1.Data == NULL) {
+    wavfile1.Data = (float*)malloc(wavfile1.file_size);
+    if(wavfile1.Data == NULL) {
         printf("wave1.data malloc failed\n");
     }
 
     int count = 0;
-    count = fread_s(rawfile1.Data, rawfile1.file_size, sizeof(*rawfile1.Data), (rawfile1.file_size / sizeof(*rawfile1.Data)), raw);
-    for(size_t i = 0; i < rawfile1.file_size / sizeof(*rawfile1.Data); i++) {
-        printf("Data %f\n", rawfile1.Data[i]);
+    count = fread_s(wavfile1.Data, wavfile1.file_size, sizeof(*wavfile1.Data), (wavfile1.file_size / sizeof(*wavfile1.Data)), wav);
+    if(ferror(wav)) {
+        perror("Read error");
     }
+    //for(size_t i = 0; i < rawfile1.file_size / sizeof(*rawfile1.Data); i++) {
+    //    printf("Data %f\n", rawfile1.Data[i]);
+    //}
+    wavfile1.num_elements = count;
 
 
     pData = NULL;
@@ -136,7 +156,7 @@ HRESULT PlayAudioStream(MyAudioSource *pMySource) {
         EXIT_ON_ERROR(hr);
 
         // Load the initial data into the shared buffer.
-        hr = pMySource->LoadData(bufferFrameCount, pData, &flags);
+        hr = pMySource->LoadData(bufferFrameCount, pData, &flags, &wavfile1);
         EXIT_ON_ERROR(hr);
 
         hr = pRenderClient->ReleaseBuffer(bufferFrameCount, flags);

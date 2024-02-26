@@ -130,6 +130,7 @@
     <ClCompile Include="sharedaudio.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="sine.raw" />
     <None Include="swoosh.raw" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
