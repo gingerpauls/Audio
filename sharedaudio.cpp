@@ -1,8 +1,10 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include "AudioClient.h"
 #include "mmdeviceapi.h"
 #include "time.h"
 #include "math.h"
 #include "stdio.h"
+#include "stdlib.h"
 
 #define M_PI 3.14159265358979323846
 
@@ -17,6 +19,11 @@
 #define SAFE_RELEASE(punk)  \
               if ((punk) != NULL)  \
                 { (punk)->Release(); (punk) = NULL; }
+
+typedef struct {
+    float *Data;
+    unsigned long file_size;
+} RAW;
 
 const CLSID CLSID_MMDeviceEnumerator = __uuidof(MMDeviceEnumerator);
 const IID IID_IMMDeviceEnumerator = __uuidof(IMMDeviceEnumerator);
@@ -48,7 +55,7 @@ class  MyAudioSource {
     public:
     HRESULT LoadData(UINT32 bufferFrameCount, BYTE *pData, DWORD *flags) {
         HRESULT hr = NULL;
-        GenerateSineSamples(pData, bufferFrameCount, 440, 2, 192000, 1, 0);
+        //GenerateSineSamples(pData, bufferFrameCount, 440, 2, 192000, 1, 0);
         return hr;
     }
     HRESULT SetFormat(WAVEFORMATEX *pwfx) {
@@ -72,6 +79,26 @@ HRESULT PlayAudioStream(MyAudioSource *pMySource) {
     UINT32 numFramesPadding;
     BYTE *pData;
     DWORD flags = 0;
+    FILE *raw = NULL;
+    RAW rawfile1 = {0};
+    errno_t err;
+
+    raw = fopen("swoosh.raw", "r+");
+    fseek(raw, 0, SEEK_END);
+    rawfile1.file_size = ftell(raw);
+    rewind(raw);
+
+    rawfile1.Data = (float*)malloc(rawfile1.file_size);
+    if(rawfile1.Data == NULL) {
+        printf("wave1.data malloc failed\n");
+    }
+
+    int count = 0;
+    count = fread_s(rawfile1.Data, rawfile1.file_size, sizeof(*rawfile1.Data), (rawfile1.file_size / sizeof(*rawfile1.Data)), raw);
+    for(size_t i = 0; i < rawfile1.file_size / sizeof(*rawfile1.Data); i++) {
+        printf("Data %f\n", rawfile1.Data[i]);
+    }
+
 
     pData = NULL;
 
