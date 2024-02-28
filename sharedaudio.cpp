@@ -88,25 +88,22 @@ void GenerateSineSamples(BYTE *Buffer, size_t BufferLength, DWORD Frequency, WOR
 }
 
 void LoadWAVE(BYTE *Buffer, size_t BufferLength, WORD ChannelCount, DWORD SamplesPerSecond, WAVE *wave) {
-    //float *dataBuffer = (float *) Buffer;
-    //wave->data = (float *) malloc(wave->file_size);
-    //wave->file_size = wave->file_size;
-
-    //for(size_t i = 0; i < BufferLength * ChannelCount; i += ChannelCount) {
-    //    for(size_t j = 0; j < ChannelCount; j++) {
-    //        dataBuffer[i + j] = wave->Data[i];
-    //    }
-    //}
+    float *dataBuffer = (float *) Buffer;
+    for(size_t i = 0; i < BufferLength * ChannelCount; i += ChannelCount) {
+        for(size_t j = 0; j < ChannelCount; j++) {
+            dataBuffer[i + j] = (float)(wave->Data[i]) / SHRT_MAX;
+        }
+    }
 }
 
 // if able to write at least one frame, but runs out of data, then write silence to remaining frames
 // if not able to write at least one frame, write nothing to buffer (not even silence), then write AUDCLNT_BUFFERFLAGS_SILENT to flags
 class  MyAudioSource {
     public:
-    HRESULT LoadData(UINT32 bufferFrameCount, BYTE *pData, DWORD *flags, WAVE *rawfile) {
+    HRESULT LoadData(UINT32 bufferFrameCount, BYTE *pData, DWORD *flags, WAVE *wave) {
         HRESULT hr = NULL;
-        GenerateSineSamples(pData, bufferFrameCount, 440, 2, 192000, 1, 0);
-        //LoadRAW(pData, bufferFrameCount, 2, 192000, rawfile);
+        //GenerateSineSamples(pData, bufferFrameCount, 440, wave->NumChannels, wave->SampleRate, 1, 0);
+        LoadWAVE(pData, bufferFrameCount, 2, wave->SampleRate, wave);
         return hr;
     }
     HRESULT SetFormat(WAVEFORMATEX *pwfx) {
@@ -135,8 +132,8 @@ HRESULT PlayAudioStream(MyAudioSource *pMySource) {
 
     FILE *wav = NULL;
     errno_t err;
-    //err = fopen_s(&wav, "sounds/sine_44k_16b_1ch.wav", "rb");
-    err = fopen_s(&wav, "sounds/ambient-swoosh.wav", "rb");
+    err = fopen_s(&wav, "sounds/sine_44k_16b_1ch.wav", "rb");
+    //err = fopen_s(&wav, "sounds/ambient-swoosh.wav", "rb");
     //err = fopen_s(&wav, "sounds/ambient-drop.wav", "rb");
     //err = fopen_s(&wav, "sounds/sine_192k_32b_2ch.wav", "rb");
     //err = fopen_s(&wav, "sounds/message.wav", "rb");
@@ -258,7 +255,7 @@ HRESULT PlayAudioStream(MyAudioSource *pMySource) {
             printf("Data[%i]: \t%hi\n", i, wavefile1.Data[i]);
             total_count += count;
         }
-        free(wavefile1.Data);
+        
         printf("total_count: %i\n", total_count);
     }
     fclose(wav);
@@ -348,6 +345,7 @@ Exit:
     SAFE_RELEASE(pDevice);
     SAFE_RELEASE(pAudioClient);
     SAFE_RELEASE(pRenderClient);
+    free(wavefile1.Data);
     //SAFE_RELEASE(pData);
     //free(pData); // delete?
     //delete pData;
