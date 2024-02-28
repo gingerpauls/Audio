@@ -146,12 +146,13 @@ HRESULT PlayAudioStream(MyAudioSource *pMySource) {
 
     FILE *wav = NULL;
     errno_t err;
-    err = fopen_s(&wav, "sounds/sine_44k_16b_1ch.wav", "rb");
+    //err = fopen_s(&wav, "sounds/sine_44k_16b_1ch.wav", "rb");
     //err = fopen_s(&wav, "sounds/ambient-swoosh.wav", "rb");
     //err = fopen_s(&wav, "sounds/resonant-twang.wav", "rb");
     //err = fopen_s(&wav, "sounds/sine_192k_32b_2ch.wav", "rb");
     //err = fopen_s(&wav, "sounds/vocal-hah.wav", "rb");
     //err = fopen_s(&wav, "sounds/synthetic-gib.wav", "rb");
+    err = fopen_s(&wav, "sounds/message-192k-2ch-32b.wav", "rb");
 
     if(err != 0) {
         perror("fopen\n");
