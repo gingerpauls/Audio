@@ -55,7 +55,7 @@ typedef struct {
 typedef struct {
     char ID[CHUNK_ID_SIZE];
     unsigned int Size;
-    int *Data;
+    short *Data;
 } DATA;
 
 typedef struct {
@@ -105,9 +105,9 @@ void GenerateSineSamples(BYTE *Buffer, size_t BufferLength, DWORD Frequency, WOR
 
 void LoadWAVE(BYTE *Buffer, size_t BufferLength, WORD ChannelCount, DWORD SamplesPerSecond, WAVE *wave) {
     float *dataBuffer = (float *) Buffer;
-    for(size_t i = 0; i < BufferLength * ChannelCount; i += ChannelCount) {
+    for(size_t i = 0; i < wave->DATA.Size / sizeof(*wave->DATA.Data); i++) {
         for(size_t j = 0; j < ChannelCount; j++) {
-            dataBuffer[i + j] = (float)(wave->DATA.Data[i]) / LONG_MAX;
+            dataBuffer[(i*2) + (j)] = (float) (wave->DATA.Data[i]) / SHRT_MAX; // i*2 is for mono to stereo
         }
     }
 }
@@ -147,12 +147,10 @@ HRESULT PlayAudioStream(MyAudioSource *pMySource) {
     FILE *wav = NULL;
     errno_t err;
     //err = fopen_s(&wav, "sounds/sine_44k_16b_1ch.wav", "rb");
-    //err = fopen_s(&wav, "sounds/ambient-swoosh.wav", "rb");
-    //err = fopen_s(&wav, "sounds/resonant-twang.wav", "rb");
+    err = fopen_s(&wav, "sounds/ambient-swoosh.wav", "rb");
+    //err = fopen_s(&wav, "sounds/ambient-drop.wav", "rb");
     //err = fopen_s(&wav, "sounds/sine_192k_32b_2ch.wav", "rb");
-    //err = fopen_s(&wav, "sounds/vocal-hah.wav", "rb");
-    //err = fopen_s(&wav, "sounds/synthetic-gib.wav", "rb");
-    err = fopen_s(&wav, "sounds/message-192k-2ch-32b.wav", "rb");
+    //err = fopen_s(&wav, "sounds/message-192k-2ch-32b.wav", "rb");
 
     if(err != 0) {
         perror("fopen\n");
@@ -250,7 +248,7 @@ HRESULT PlayAudioStream(MyAudioSource *pMySource) {
             count = fread_s(&wav1.DATA.Size, sizeof(wav1.DATA.Size), 1, sizeof(wav1.DATA.Size), wav);
             printf("ID: \t%.4s\n", &wav1.DATA.ID);
             printf("Size: \t%u\n", wav1.DATA.Size);
-            wav1.DATA.Data = (int*)malloc(wav1.DATA.Size);
+            wav1.DATA.Data = (short*)malloc(wav1.DATA.Size);
             int total_count = 0;
             for(size_t i = 0; i < wav1.DATA.Size / sizeof(*wav1.DATA.Data); i++) {
                 count = fread_s(&wav1.DATA.Data[i], wav1.DATA.Size, sizeof(*wav1.DATA.Data), 1, wav);
@@ -264,12 +262,9 @@ HRESULT PlayAudioStream(MyAudioSource *pMySource) {
     }
     while(1);
 
-    //fclose(wav);
+   
 
     printf("program success\n");
-
-
-
 
     pData = NULL;
 
@@ -353,6 +348,7 @@ Exit:
     SAFE_RELEASE(pDevice);
     SAFE_RELEASE(pAudioClient);
     SAFE_RELEASE(pRenderClient);
+    fclose(wav);
     //SAFE_RELEASE(pData);
     //free(pData); // delete?
     //delete pData;
